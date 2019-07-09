@@ -33,9 +33,9 @@ class ConnectionInvitationHandler(BaseHandler):
         mgr = ConnectionManager(context)
         conn = await mgr.receive_invitation(context.message, their_role=role)
 
-        if conn.requires_routing:
-            await mgr.update_routing(conn)
-        else:
-            request = await mgr.create_request(conn)
-            target = await mgr.get_connection_target(conn)
-            await responder.send(request, target=target)
+        #if conn.requires_routing:
+        #    await mgr.update_routing(conn)
+        #else:
+        request = await mgr.create_request(conn)
+        target = await mgr.get_connection_target(conn)
+        await responder.send(request, target=target)
