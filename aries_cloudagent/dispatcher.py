@@ -67,6 +67,7 @@ class Dispatcher:
             self.logger.error(
                 f"Message parsing failed: {str(e)}, sending problem report"
             )
+            self.logger.debug('%s, %s', parsed_msg, connection)
             error_result = ProblemReport(explain_ltxt=str(e))
             if delivery.thread_id:
                 error_result.assign_thread_id(delivery.thread_id)
@@ -126,6 +127,7 @@ class Dispatcher:
         message_type = serializer.extract_message_type(parsed_msg)
 
         message_cls = registry.resolve_message_class(message_type)
+        self.logger.debug('Selected message class: %s', message_cls)
 
         if not message_cls:
             raise MessageParseError(f"Unrecognized message type {message_type}")
