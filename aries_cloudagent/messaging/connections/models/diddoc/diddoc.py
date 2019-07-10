@@ -252,6 +252,7 @@ class DIDDoc:
         for pubkey in did_doc.get(
             "publicKey", {}
         ):  # include all public keys, authentication pubkeys by reference
+            LOGGER.debug('Deserializing pubkey %s', pubkey)
             pubkey_type = PublicKeyType.get(pubkey["type"])
             authn = any(
                 canon_ref(rv.did, ak.get("publicKey", ""))
@@ -285,6 +286,7 @@ class DIDDoc:
                 rv.pubkey[key.id] = key
 
         for service in did_doc.get("service", {}):
+            LOGGER.debug('Deserializing service %s', service)
             endpoint = service["serviceEndpoint"]
             svc = Service(  # initialization canonicalizes id
                 rv.did,
