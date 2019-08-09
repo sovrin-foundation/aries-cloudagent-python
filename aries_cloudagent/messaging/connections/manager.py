@@ -124,7 +124,8 @@ class ConnectionManager:
                 )
             # FIXME - allow ledger instance to format public DID with prefix?
             invitation = ConnectionInvitation(
-                label=my_label, did=f"did:sov:{public_did.did}", endpoint=my_endpoint
+                label=my_label, did=f"did:sov:{public_did.did}",
+                endpoint=my_endpoint, recipient_keys=[public_did.verkey]
             )
             return None, invitation
 
