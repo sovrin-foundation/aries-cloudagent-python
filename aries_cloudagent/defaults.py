@@ -28,6 +28,8 @@ from .messaging.problem_report.message import (
     ProblemReport,
 )
 
+from .messaging.admin.connections import MESSAGE_TYPES as CONNECTION_ADMIN_MESSAGES
+
 
 def default_protocol_registry() -> ProtocolRegistry:
     """Protocol registry for default message types."""
@@ -45,6 +47,7 @@ def default_protocol_registry() -> ProtocolRegistry:
         V10_ISSUE_CREDENTIAL_MESSAGES,
         ROUTING_MESSAGES,
         TRUSTPING_MESSAGES,
+        CONNECTION_ADMIN_MESSAGES,
         {PROBLEM_REPORT: ProblemReport},
     )
 
