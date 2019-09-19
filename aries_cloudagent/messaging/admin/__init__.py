@@ -1,9 +1,12 @@
 """More condensed method of generating a message and its schema."""
 
 import sys
+import logging
 from ..agent_message import AgentMessage, AgentMessageSchema
+from ..base_handler import BaseHandler, RequestContext
 
 # pylint: disable=invalid-name
+# pylint: disable=too-few-public-methods
 
 
 def generic_init(instance, **kwargs):
@@ -67,3 +70,12 @@ def generate_model_schema(model_name, handler_class, message_type, schema_dict):
     )
     Schema.__module__ = sys._getframe(1).f_globals['__name__']
     return Model, Schema
+
+
+class PassHandler(BaseHandler):
+    """Handler for messages requiring no handling."""
+
+    async def handle(self, context: RequestContext, _responder):
+        """Handle messages require no handling."""
+        logger = logging.getLogger(__name__)
+        logger.debug("Not handling message of type %s", context.message._type)
