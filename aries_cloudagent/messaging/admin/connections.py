@@ -94,7 +94,7 @@ ConnectionGetList, ConnectionGetListSchema = generate_model_schema(
 )
 ConnectionList, ConnectionListSchema = generate_model_schema(
     'ConnectionList',
-    'aries_cloudagent.messaging.admin.connections.ConnectionListHandler',
+    'aries_cloudagent.messaging.admin.PassHandler',
     CONNECTION_LIST,
     {
         'results': fields.List(
@@ -103,14 +103,6 @@ ConnectionList, ConnectionListSchema = generate_model_schema(
         )
     }
 )
-
-
-class ConnectionListHandler(BaseHandler):
-    """Handler for received connection list."""
-
-    async def handle(self, context: RequestContext, responder: BaseResponder):
-        """Handle received connection list."""
-        # Do nothing
 
 
 class ConnectionGetListHandler(BaseHandler):
@@ -161,7 +153,7 @@ ConnectionGet, ConnectionGetSchema = generate_model_schema(
 
 Connection, ConnectionSchema = generate_model_schema(
     'Connection',
-    'aries_cloudagent.messaging.admin.connections.ConnectionHandler',
+    'aries_cloudagent.messaging.admin.PassHandler',
     CONNECTION,
     {
         'connection': fields.Nested(ConnectionRecordSchema, required=True),
@@ -181,7 +173,7 @@ CreateInvitation, CreateInvitationSchema = generate_model_schema(
 
 Invitation, InvitationSchema = generate_model_schema(
     'Invitation',
-    'aries_cloudagent.messaging.admin.connections.InvitationHandler',
+    'aries_cloudagent.messaging.admin.PassHandler',
     INVITATION,
     {
         'connection_id': fields.Str(required=True),
