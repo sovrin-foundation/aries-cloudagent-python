@@ -1,4 +1,4 @@
-"""Define messaging of the admin protocol."""
+"""Define messages for connections admin protocol."""
 
 # pylint: disable=invalid-name
 # pylint: disable=too-few-public-methods
@@ -12,7 +12,7 @@ from ..connections.models.connection_record import (
 )
 
 
-PROTOCOL = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/admin-connection/1.0'
+PROTOCOL = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/admin-connections/1.0'
 
 # Message Types
 CONNECTION_GET_LIST = '{}/connection-get-list'.format(PROTOCOL)
@@ -98,7 +98,8 @@ ConnectionList, ConnectionListSchema = generate_model_schema(
     CONNECTION_LIST,
     {
         'results': fields.List(
-            fields.Nested(ConnectionRecordSchema, required=True)
+            fields.Nested(ConnectionRecordSchema),
+            required=True
         )
     }
 )
@@ -146,7 +147,6 @@ class ConnectionGetListHandler(BaseHandler):
         results.sort(key=connection_sort_key)
         connection_list = ConnectionList(results=results)
         connection_list.assign_thread_from(context.message)
-        print(connection_list.serialize())
         await responder.send_reply(connection_list)
 
 
