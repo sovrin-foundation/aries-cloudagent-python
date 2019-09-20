@@ -7,7 +7,7 @@ from asyncio import shield
 
 from marshmallow import fields
 
-from . import generate_model_schema
+from . import generate_model_schema, admin_only
 from ..base_handler import BaseHandler, BaseResponder, RequestContext
 from ...ledger.base import BaseLedger
 
@@ -56,6 +56,7 @@ SchemaID, SchemaIDSchema = generate_model_schema(
 class SendSchemaHandler(BaseHandler):
     """Handler for received send schema request."""
 
+    @admin_only
     async def handle(self, context: RequestContext, responder: BaseResponder):
         """Handle received send schema request."""
         ledger: BaseLedger = await context.inject(BaseLedger)
@@ -93,6 +94,7 @@ Schema, SchemaSchema = generate_model_schema(
 class SchemaGetHandler(BaseHandler):
     """Handler for received schema get request."""
 
+    @admin_only
     async def handle(self, context: RequestContext, responder: BaseResponder):
         """Handle received schema get request."""
 
