@@ -2,11 +2,31 @@
 
 import sys
 import logging
+import functools
 from ..agent_message import AgentMessage, AgentMessageSchema
-from ..base_handler import BaseHandler, RequestContext
+from ..base_handler import BaseHandler, BaseResponder, RequestContext
+from ..problem_report.message import ProblemReport
 
 # pylint: disable=invalid-name
 # pylint: disable=too-few-public-methods
+
+
+def admin_only(func):
+    """Verify that connection has admin role; otherwise, send problem-report."""
+    @functools.wraps(func)
+    async def _admin_only(handler, context: RequestContext, responder: BaseResponder):
+        if not context.connection_record.their_role == 'admin':
+            report = ProblemReport(
+                explain_ltxt='This connection is not authorized to perform '
+                             'the requested action.',
+                who_retries='none'
+            )
+            report.assign_thread_from(context.message)
+            await responder.send_reply(report)
+            return
+
+        return await func(handler, context, responder)
+    return _admin_only
 
 
 def generic_init(instance, **kwargs):

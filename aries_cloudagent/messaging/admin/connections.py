@@ -5,7 +5,7 @@
 
 from marshmallow import fields, validate
 
-from . import generate_model_schema
+from . import generate_model_schema, admin_only
 from ..base_handler import BaseHandler, BaseResponder, RequestContext
 from ..connections.models.connection_record import (
     ConnectionRecord, ConnectionRecordSchema
@@ -108,8 +108,10 @@ ConnectionList, ConnectionListSchema = generate_model_schema(
 class ConnectionGetListHandler(BaseHandler):
     """Handler for get connection list request."""
 
+    @admin_only
     async def handle(self, context: RequestContext, responder: BaseResponder):
         """Handle get connection list request."""
+
         def connection_sort_key(conn):
             """Get the sorting key for a particular connection."""
             if conn["state"] == ConnectionRecord.STATE_INACTIVE:
