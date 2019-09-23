@@ -29,6 +29,8 @@ from .messaging.problem_report.message import (
 )
 
 from .messaging.admin.connections import MESSAGE_TYPES as CONNECTION_ADMIN_MESSAGES
+from .messaging.admin.static_connections import \
+        MESSAGE_TYPES as STATIC_CONN_ADMIN_MESSAGES
 
 
 def default_protocol_registry() -> ProtocolRegistry:
@@ -48,6 +50,7 @@ def default_protocol_registry() -> ProtocolRegistry:
         ROUTING_MESSAGES,
         TRUSTPING_MESSAGES,
         CONNECTION_ADMIN_MESSAGES,
+        STATIC_CONN_ADMIN_MESSAGES,
         {PROBLEM_REPORT: ProblemReport},
     )
 
