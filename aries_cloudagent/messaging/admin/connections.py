@@ -66,10 +66,10 @@ MESSAGE_TYPES = {
 
 
 ConnectionGetList, ConnectionGetListSchema = generate_model_schema(
-    'ConnectionGetList',
-    'aries_cloudagent.messaging.admin.connections.ConnectionGetListHandler',
-    CONNECTION_GET_LIST,
-    {
+    name='ConnectionGetList',
+    handler='aries_cloudagent.messaging.admin.connections.ConnectionGetListHandler',
+    msg_type=CONNECTION_GET_LIST,
+    schema={
         'initiator': fields.Str(
             validate=validate.OneOf(['self', 'external']),
             required=False,
@@ -92,15 +92,106 @@ ConnectionGetList, ConnectionGetListSchema = generate_model_schema(
         'their_role': fields.Str(required=False)
     }
 )
+
 ConnectionList, ConnectionListSchema = generate_model_schema(
-    'ConnectionList',
-    'aries_cloudagent.messaging.admin.PassHandler',
-    CONNECTION_LIST,
-    {
+    name='ConnectionList',
+    handler='aries_cloudagent.messaging.admin.PassHandler',
+    msg_type=CONNECTION_LIST,
+    schema={
         'results': fields.List(
             fields.Nested(ConnectionRecordSchema),
             required=True
         )
+    }
+)
+
+ConnectionGet, ConnectionGetSchema = generate_model_schema(
+    name='ConnectionGet',
+    handler='aries_cloudagent.messaging.admin.connections.ConnectionGetHandler',
+    msg_type=CONNECTION_GET,
+    schema={
+        'connection_id': fields.Str(required=True)
+    }
+)
+
+Connection, ConnectionSchema = generate_model_schema(
+    name='Connection',
+    handler='aries_cloudagent.messaging.admin.PassHandler',
+    msg_type=CONNECTION,
+    schema={
+        'connection': fields.Nested(ConnectionRecordSchema, required=True),
+    }
+)
+
+CreateInvitation, CreateInvitationSchema = generate_model_schema(
+    name='CreateInvitation',
+    handler='aries_cloudagent.messaging.admin.connections.CreateInvitationHandler',
+    msg_type=CREATE_INVITATION,
+    schema={
+        'accept': fields.Boolean(missing=False),
+        'public': fields.Boolean(missing=False),
+        'multi_use': fields.Boolean(missing=False)
+    }
+)
+
+Invitation, InvitationSchema = generate_model_schema(
+    name='Invitation',
+    handler='aries_cloudagent.messaging.admin.PassHandler',
+    msg_type=INVITATION,
+    schema={
+        'connection_id': fields.Str(required=True),
+        'invitation': fields.Str(required=True),
+        'invitation_url': fields.Str(required=True)
+    }
+)
+
+ReceiveInvitation, ReceiveInvitationSchema = generate_model_schema(
+    name='ReceiveInvitation',
+    handler='aries_cloudagent.messaging.admin.connections.ReceiveInvitationHandler',
+    msg_type=RECEIVE_INVITATION,
+    schema={
+        'invitation': fields.Str(required=True),
+        'accept': fields.Boolean(missing=False)
+    }
+)
+
+AcceptInvitation, AcceptInvitationSchema = generate_model_schema(
+    name='AcceptInvitation',
+    handler='aries_cloudagent.messaging.admin.connections.AcceptInvitationHandler',
+    msg_type=ACCEPT_INVITATION,
+    schema={
+        'connection_id': fields.Str(required=True),
+        'my_endpoint': fields.Str(required=False),
+        'my_label': fields.Str(required=False),
+    }
+)
+
+AcceptRequest, AcceptRequestSchema = generate_model_schema(
+    name='AcceptRequest',
+    handler='aries_cloudagent.messaging.admin.connections.AcceptRequestHandler',
+    msg_type=ACCEPT_REQUEST,
+    schema={
+        'connection_id': fields.Str(required=True),
+        'my_endpoint': fields.Str(required=False),
+    }
+)
+
+EstablishInbound, EstablishInboundSchema = generate_model_schema(
+    name='EstablishInbound',
+    handler='aries_cloudagent.messaging.admin.connections.EstablishInboundHandler',
+    msg_type=ESTABLISH_INBOUND,
+    schema={
+        'connection_id': fields.Str(required=True),
+        'ref_id': fields.Str(required=True),
+    }
+)
+
+DeleteConnection, DeleteConnectionSchema = generate_model_schema(
+    name='DeleteConnection',
+    handler='aries_cloudagent.messaging.admin.connections.DeleteConnectionHandler',
+    msg_type=DELETE_CONNECTION,
+    schema={
+        'connection_id': fields.Str(required=True),
     }
 )
 
@@ -142,94 +233,3 @@ class ConnectionGetListHandler(BaseHandler):
         connection_list = ConnectionList(results=results)
         connection_list.assign_thread_from(context.message)
         await responder.send_reply(connection_list)
-
-
-ConnectionGet, ConnectionGetSchema = generate_model_schema(
-    'ConnectionGet',
-    'aries_cloudagent.messaging.admin.connections.ConnectionGetHandler',
-    CONNECTION_GET,
-    {
-        'connection_id': fields.Str(required=True)
-    }
-)
-
-Connection, ConnectionSchema = generate_model_schema(
-    'Connection',
-    'aries_cloudagent.messaging.admin.PassHandler',
-    CONNECTION,
-    {
-        'connection': fields.Nested(ConnectionRecordSchema, required=True),
-    }
-)
-
-CreateInvitation, CreateInvitationSchema = generate_model_schema(
-    'CreateInvitation',
-    'aries_cloudagent.messaging.admin.connections.CreateInvitationHandler',
-    CREATE_INVITATION,
-    {
-        'accept': fields.Boolean(missing=False),
-        'public': fields.Boolean(missing=False),
-        'multi_use': fields.Boolean(missing=False)
-    }
-)
-
-Invitation, InvitationSchema = generate_model_schema(
-    'Invitation',
-    'aries_cloudagent.messaging.admin.PassHandler',
-    INVITATION,
-    {
-        'connection_id': fields.Str(required=True),
-        'invitation': fields.Str(required=True),
-        'invitation_url': fields.Str(required=True)
-    }
-)
-
-ReceiveInvitation, ReceiveInvitationSchema = generate_model_schema(
-    'ReceiveInvitation',
-    'aries_cloudagent.messaging.admin.connections.ReceiveInvitationHandler',
-    RECEIVE_INVITATION,
-    {
-        'invitation': fields.Str(required=True),
-        'accept': fields.Boolean(missing=False)
-    }
-)
-
-AcceptInvitation, AcceptInvitationSchema = generate_model_schema(
-    'AcceptInvitation',
-    'aries_cloudagent.messaging.admin.connections.AcceptInvitationHandler',
-    ACCEPT_INVITATION,
-    {
-        'connection_id': fields.Str(required=True),
-        'my_endpoint': fields.Str(required=False),
-        'my_label': fields.Str(required=False),
-    }
-)
-
-AcceptRequest, AcceptRequestSchema = generate_model_schema(
-    'AcceptRequest',
-    'aries_cloudagent.messaging.admin.connections.AcceptRequestHandler',
-    ACCEPT_REQUEST,
-    {
-        'connection_id': fields.Str(required=True),
-        'my_endpoint': fields.Str(required=False),
-    }
-)
-
-EstablishInbound, EstablishInboundSchema = generate_model_schema(
-    'EstablishInbound',
-    'aries_cloudagent.messaging.admin.connections.EstablishInboundHandler',
-    ESTABLISH_INBOUND,
-    {
-        'connection_id': fields.Str(required=True),
-        'ref_id': fields.Str(required=True),
-    }
-)
-
-DeleteConnection, DeleteConnectionSchema = generate_model_schema(
-    'DeleteConnection',
-    'aries_cloudagent.messaging.admin.connections.DeleteConnectionHandler',
-    DELETE_CONNECTION,
-    {
-        'connection_id': fields.Str(required=True),
-    }
-)

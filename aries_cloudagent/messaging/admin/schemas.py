@@ -34,20 +34,20 @@ MESSAGE_TYPES = {
 }
 
 SendSchema, SendSchemaSchema = generate_model_schema(
-    'SendSchema',
-    'aries_cloudagent.messaging.admin.schemas.SendSchemaHandler',
-    SEND_SCHEMA,
-    {
+    name='SendSchema',
+    handler='aries_cloudagent.messaging.admin.schemas.SendSchemaHandler',
+    msg_type=SEND_SCHEMA,
+    schema={
         'schema_name': fields.Str(required=True),
         'schema_version': fields.Str(required=True),
         'attributes': fields.List(fields.Str(), required=True)
     }
 )
 SchemaID, SchemaIDSchema = generate_model_schema(
-    'SchemaID',
-    'aries_cloudagent.messaging.admin.PassHandler',
-    SCHEMA_ID,
-    {
+    name='SchemaID',
+    handler='aries_cloudagent.messaging.admin.PassHandler',
+    msg_type=SCHEMA_ID,
+    schema={
         'schema_id': fields.Str()
     }
 )
@@ -74,18 +74,18 @@ class SendSchemaHandler(BaseHandler):
 
 
 SchemaGet, SchemaGetSchema = generate_model_schema(
-    'SchemaGet',
-    'aries_cloudagent.messaging.admin.schemas.SchemaGetHandler',
-    SCHEMA_GET,
-    {
+    name='SchemaGet',
+    handler='aries_cloudagent.messaging.admin.schemas.SchemaGetHandler',
+    msg_type=SCHEMA_GET,
+    schema={
         'schema_id': fields.Str(required=True)
     }
 )
 Schema, SchemaSchema = generate_model_schema(
-    'Schema',
-    'aries_cloudagent.messaging.admin.PassHandler',
-    SCHEMA,
-    {
+    name='Schema',
+    handler='aries_cloudagent.messaging.admin.PassHandler',
+    msg_type=SCHEMA,
+    schema={
         'schema': fields.Dict()
     }
 )
