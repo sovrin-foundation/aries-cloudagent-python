@@ -79,10 +79,10 @@ class CreateStaticConnectionHandler(BaseHandler):
             their_did=context.message.static_did,
             their_label=context.message.label,
             their_role=context.message.role if context.message.role else None,
-            state=ConnectionRecord.STATE_ACTIVE,
+            state=ConnectionRecord.STATE_STATIC,
         )
 
-        # Construct their did doc from basic components in message
+        # Construct their did doc from the basic components in message
         diddoc = DIDDoc(context.message.static_did)
         public_key = PublicKey(
             did=context.message.static_did,

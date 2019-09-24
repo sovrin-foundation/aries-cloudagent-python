@@ -50,6 +50,7 @@ class ConnectionRecord(BaseRecord):  # lgtm[py/missing-equals]
     STATE_ACTIVE = "active"
     STATE_ERROR = "error"
     STATE_INACTIVE = "inactive"
+    STATE_STATIC = "static"
 
     INVITATION_MODE_ONCE = "once"
     INVITATION_MODE_MULTI = "multi"
