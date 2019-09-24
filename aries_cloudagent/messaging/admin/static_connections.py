@@ -40,6 +40,7 @@ CreateStaticConnection, CreateStaticConnectionSchema = generate_model_schema(
     msg_type=CREATE_STATIC_CONNECTION,
     schema={
         'label': fields.Str(required=True),
+        'role': fields.Str(required=False),
         'static_did': fields.Str(required=True),
         'static_key': fields.Str(required=True),
         'static_endpoint': fields.Str(missing='')
@@ -77,6 +78,7 @@ class CreateStaticConnectionHandler(BaseHandler):
             my_did=my_info.did,
             their_did=context.message.static_did,
             their_label=context.message.label,
+            their_role=context.message.role if context.message.role else None,
             state=ConnectionRecord.STATE_ACTIVE,
         )
 
