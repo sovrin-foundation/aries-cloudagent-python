@@ -11,6 +11,8 @@ from ..connections.manager import ConnectionManager
 from ..connections.models.connection_record import (
     ConnectionRecord, ConnectionRecordSchema
 )
+from ..problem_report.message import ProblemReport
+from ...storage.error import StorageNotFoundError
 
 
 PROTOCOL = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/admin-connections/1.0'
@@ -26,7 +28,8 @@ RECEIVE_INVITATION = '{}/receive-invitation'.format(PROTOCOL)
 ACCEPT_INVITATION = '{}/accept-invitation'.format(PROTOCOL)
 ACCEPT_REQUEST = '{}/accept-request'.format(PROTOCOL)
 ESTABLISH_INBOUND = '{}/establish-inbound'.format(PROTOCOL)
-DELETE_CONNECTION = '{}/delete-connection-request'.format(PROTOCOL)
+DELETE_CONNECTION = '{}/delete'.format(PROTOCOL)
+CONNECTION_ACK = '{}/ack'.format(PROTOCOL)
 
 # Message Type string to Message Class map
 MESSAGE_TYPES = {
@@ -63,6 +66,9 @@ MESSAGE_TYPES = {
     DELETE_CONNECTION:
         'aries_cloudagent.messaging.admin.connections'
         '.DeleteConnection',
+    CONNECTION_ACK:
+        'aries_cloudagent.messaging.admin.connections'
+        '.ConnectionAck'
 }
 
 
@@ -153,7 +159,7 @@ Invitation, InvitationSchema = generate_model_schema(
 
 
 class CreateInvitationHandler(BaseHandler):
-    """Handler for get connection list request."""
+    """Handler for create invitation request."""
 
     @admin_only
     async def handle(self, context: RequestContext, responder: BaseResponder):
@@ -224,6 +230,36 @@ DeleteConnection, DeleteConnectionSchema = generate_model_schema(
         'connection_id': fields.Str(required=True),
     }
 )
+
+ConnectionAck, ConnectionAckSchema = generate_model_schema(
+    name='ConnectionAck',
+    handler='aries_cloudagent.messaging.admin.PassHandler',
+    msg_type=CONNECTION_ACK,
+    schema={}
+)
+
+class DeleteConnectionHandler(BaseHandler):
+    """Handler for delete connection request."""
+
+    @admin_only
+    async def handle(self, context: RequestContext, responder: BaseResponder):
+        """Handle delete connection request."""
+        try:
+            connection = await ConnectionRecord.retrieve_by_id(
+                context,
+                context.message.connection_id
+            )
+        except StorageNotFoundError:
+            report = ProblemReport(
+                explain_ltxt='Connection not found.',
+                who_retries='none'
+            )
+            report.assign_thread_from(context.message)
+            await responder.send_reply(report)
+        await connection.delete_record(context)
+        ack = ConnectionAck()
+        ack.assign_thread_from(context.message)
+        await responder.send_reply(ack)
 
 
 class ConnectionGetListHandler(BaseHandler):
