@@ -7,6 +7,7 @@ from marshmallow import fields, validate
 
 from . import generate_model_schema, admin_only
 from ..base_handler import BaseHandler, BaseResponder, RequestContext
+from ..connections.manager import ConnectionManager
 from ..connections.models.connection_record import (
     ConnectionRecord, ConnectionRecordSchema
 )
@@ -19,7 +20,7 @@ CONNECTION_GET_LIST = '{}/connection-get-list'.format(PROTOCOL)
 CONNECTION_LIST = '{}/connection-list'.format(PROTOCOL)
 CONNECTION_GET = '{}/connection-get'.format(PROTOCOL)
 CONNECTION = '{}/connection'.format(PROTOCOL)
-CREATE_INVITATION = '{}/create-invitiation'.format(PROTOCOL)
+CREATE_INVITATION = '{}/create-invitation'.format(PROTOCOL)
 INVITATION = '{}/invitation'.format(PROTOCOL)
 RECEIVE_INVITATION = '{}/receive-invitation'.format(PROTOCOL)
 ACCEPT_INVITATION = '{}/accept-invitation'.format(PROTOCOL)
@@ -128,7 +129,12 @@ CreateInvitation, CreateInvitationSchema = generate_model_schema(
     handler='aries_cloudagent.messaging.admin.connections.CreateInvitationHandler',
     msg_type=CREATE_INVITATION,
     schema={
-        'accept': fields.Boolean(missing=False),
+        'label': fields.Str(required=False),
+        'role': fields.Str(required=False),
+        'accept': fields.Str(
+            required=False,
+            validate=validate.OneOf(['none', 'auto'])
+        ),
         'public': fields.Boolean(missing=False),
         'multi_use': fields.Boolean(missing=False)
     }
@@ -144,6 +150,30 @@ Invitation, InvitationSchema = generate_model_schema(
         'invitation_url': fields.Str(required=True)
     }
 )
+
+
+class CreateInvitationHandler(BaseHandler):
+    """Handler for get connection list request."""
+
+    @admin_only
+    async def handle(self, context: RequestContext, responder: BaseResponder):
+        """Handle create invitation request."""
+        connection_mgr = ConnectionManager(context)
+        connection, invitation = await connection_mgr.create_invitation(
+            my_label=context.message.label,
+            their_role=context.message.role,
+            accept=context.message.accept,
+            multi_use=bool(context.message.multi_use),
+            public=bool(context.message.public),
+        )
+        invite_response = Invitation(
+            connection_id=connection and connection.connection_id,
+            invitation=invitation.serialize(),
+            invitation_url=invitation.to_url(),
+        )
+        invite_response.assign_thread_from(context.message)
+        await responder.send_reply(invite_response)
+
 
 ReceiveInvitation, ReceiveInvitationSchema = generate_model_schema(
     name='ReceiveInvitation',
