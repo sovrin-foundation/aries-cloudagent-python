@@ -29,6 +29,7 @@ ACCEPT_INVITATION = '{}/accept-invitation'.format(PROTOCOL)
 ACCEPT_REQUEST = '{}/accept-request'.format(PROTOCOL)
 ESTABLISH_INBOUND = '{}/establish-inbound'.format(PROTOCOL)
 DELETE_CONNECTION = '{}/delete'.format(PROTOCOL)
+UPDATE_CONNECTION = '{}/update'.format(PROTOCOL)
 CONNECTION_ACK = '{}/ack'.format(PROTOCOL)
 
 # Message Type string to Message Class map
@@ -68,7 +69,10 @@ MESSAGE_TYPES = {
         '.DeleteConnection',
     CONNECTION_ACK:
         'aries_cloudagent.messaging.admin.connections'
-        '.ConnectionAck'
+        '.ConnectionAck',
+    UPDATE_CONNECTION:
+        'aries_cloudagent.messaging.admin.connections'
+        '.UpdateConnection',
 }
 
 
@@ -238,6 +242,17 @@ ConnectionAck, ConnectionAckSchema = generate_model_schema(
     schema={}
 )
 
+UpdateConnection, UpdateConnectionSchema = generate_model_schema(
+    name='UpdateConnection',
+    handler='aries_cloudagent.messaging.admin.connections.UpdateConnectionHandler',
+    msg_type=UPDATE_CONNECTION,
+    schema={
+        'connection_id': fields.Str(required=True),
+        'label': fields.Str(required=False),
+        'role': fields.Str(required=False)
+    }
+)
+
 class DeleteConnectionHandler(BaseHandler):
     """Handler for delete connection request."""
 
@@ -260,6 +275,35 @@ class DeleteConnectionHandler(BaseHandler):
         ack = ConnectionAck()
         ack.assign_thread_from(context.message)
         await responder.send_reply(ack)
+
+
+class UpdateConnectionHandler(BaseHandler):
+    """Handler for update connection request."""
+
+    @admin_only
+    async def handle(self, context: RequestContext, responder: BaseResponder):
+        """Handle update connection request."""
+        try:
+            connection = await ConnectionRecord.retrieve_by_id(
+                context,
+                context.message.connection_id
+            )
+        except StorageNotFoundError:
+            report = ProblemReport(
+                explain_ltxt='Connection not found.',
+                who_retries='none'
+            )
+            report.assign_thread_from(context.message)
+            await responder.send_reply(report)
+
+        new_label = context.message.label or connection.their_label
+        connection.their_label = new_label
+        new_role = context.message.role or connection.their_role
+        connection.their_role = new_role
+        await connection.save(context, reason="Update request received.")
+        conn_response = Connection(connection=connection)
+        conn_response.assign_thread_from(context.message)
+        await responder.send_reply(conn_response)
 
 
 class ConnectionGetListHandler(BaseHandler):
