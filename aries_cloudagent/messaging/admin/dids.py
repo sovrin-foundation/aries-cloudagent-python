@@ -72,6 +72,7 @@ class DidRecord(BaseRecord):
          *,
          did: str = None,
          verkey: str = None,
+         metadata: dict = None,
          public: bool = False,
          **kwargs,
     ):
@@ -80,6 +81,7 @@ class DidRecord(BaseRecord):
         self.did = did
         self.verkey = verkey
         self.public = public
+        self.metadata = metadata
 
 
 class DidRecordSchema(BaseRecordSchema):
@@ -93,6 +95,7 @@ class DidRecordSchema(BaseRecordSchema):
     did = fields.Str(required=True)
     verkey = fields.Str(required=True)
     public = fields.Bool(required=True)
+    metadata = fields.Dict(keys=fields.Str(), values=fields.Str(), required=False)
 
 
 GetListDids, GetListDidsSchema = generate_model_schema(
@@ -123,7 +126,11 @@ CreateDid, CreateDidSchema = generate_model_schema(
     name='CreateDid',
     handler='aries_cloudagent.messaging.admin.dids.CreateDidHandler',
     msg_type=CREATE_DID,
-    schema={}
+    schema={
+        'seed': fields.Str(required=False),
+        'did': fields.Str(required=False),
+        'metadata': fields.Dict(keys=fields.Str(), values=fields.Str(), required=False)
+    }
 )
 
 Did, DidSchema = generate_model_schema(
@@ -131,7 +138,7 @@ Did, DidSchema = generate_model_schema(
     handler='aries_cloudagent.messaging.admin.PassHandler',
     msg_type=DID,
     schema={
-        'did': fields.Nested(DidRecordSchema, required=False)
+        'did': fields.Nested(DidRecordSchema, required=True)
     }
 )
 
@@ -182,6 +189,24 @@ GetDidEndpoint, GetDidEndpointSchema = generate_model_schema(
 )
 
 
+class CreateDidHandler(BaseHandler):
+    """Handler for creating local DIDs"""
+
+    @admin_only
+    async def handle(self, context: RequestContext, responder: BaseResponder):
+        wallet: BaseWallet = await context.inject(BaseWallet)
+
+        did = context.message.did if context.message.did else None
+        seed = context.message.seed if context.message.seed else None
+        metadata = context.message.metadata if context.message.metadata else None
+
+        did_info = await wallet.create_local_did(seed, did, metadata)
+
+        result = Did(did=DidRecord(did=did_info.did, verkey=did_info.verkey, metadata=did_info.metadata, public=False))
+        result.assign_thread_from(context.message)
+        await responder.send_reply(result)
+
+
 class ListDidHandler(BaseHandler):
     """Handler for list DIDs."""
 
@@ -199,7 +224,7 @@ class ListDidHandler(BaseHandler):
             else:
                 dids = await wallet.get_local_dids()
 
-            results = [DidRecord(did=x.did, verkey=x.verkey, public=False).serialize() for x in dids]
+            results = [DidRecord(did=x.did, verkey=x.verkey, metadata=x.metadata if x.metadata else None, public=False).serialize() for x in dids]
         except WalletNotFoundError:
             pass
 
