@@ -117,7 +117,7 @@ ListDids, ListDidsSchema = generate_model_schema(
     handler='aries_cloudagent.messaging.admin.PassHandler',
     msg_type=LIST_DIDS,
     schema={
-        'results': fields.List(
+        'result': fields.List(
             fields.Nested(DidRecordSchema),
             required=True
         )
@@ -150,7 +150,7 @@ Did, DidSchema = generate_model_schema(
     handler='aries_cloudagent.messaging.admin.PassHandler',
     msg_type=DID,
     schema={
-        'did': fields.Nested(DidRecordSchema, required=False)
+        'result': fields.Nested(DidRecordSchema, required=False)
     }
 )
 
@@ -162,7 +162,7 @@ GetPublicDid, GetPublicDidSchema = generate_model_schema(
 )
 
 SetPublicDid, SetPublicDidSchema = generate_model_schema(
-    name='GetPublicDid',
+    name='SetPublicDid',
     handler='aries_cloudagent.messaging.admin.dids.SetPublicDidHandler',
     msg_type=SET_PUBLIC_DID,
     schema={
@@ -171,7 +171,7 @@ SetPublicDid, SetPublicDidSchema = generate_model_schema(
 )
 
 RegisterDid, RegisterDidSchema = generate_model_schema(
-    name='GetPublicDid',
+    name='RegisterDid',
     handler='aries_cloudagent.messaging.admin.dids.RegisterDidHandler',
     msg_type=SET_PUBLIC_DID,
     schema={
@@ -192,7 +192,7 @@ GetDidVerkey, GetDidVerkeySchema = generate_model_schema(
 )
 
 GetDidEndpoint, GetDidEndpointSchema = generate_model_schema(
-    name='GetDidVerkey',
+    name='GetDidEndpoint',
     handler='aries_cloudagent.messaging.admin.dids.GetDidEndpointHandler',
     msg_type=GET_DID_VERKEY,
     schema={
@@ -203,11 +203,11 @@ GetDidEndpoint, GetDidEndpointSchema = generate_model_schema(
 
 def get_reply_did(info: DIDInfo) -> Did:
     if info:
-        return Did(did=DidRecord(did=info.did if info.did else None,
+        return Did(result=DidRecord(did=info.did if info.did else None,
                                  verkey=info.verkey if info.verkey else None,
                                  metadata=info.metadata if info.metadata else None))
     else:
-        return Did(did=None)
+        return Did(result=None)
 
 
 class CreateDidHandler(BaseHandler):
@@ -251,7 +251,7 @@ class ListDidHandler(BaseHandler):
         except WalletNotFoundError:
             pass
 
-        did_list = ListDids(results=results)
+        did_list = ListDids(result=results)
         did_list.assign_thread_from(context.message)
         await responder.send_reply(did_list)
 
@@ -293,7 +293,8 @@ class SetDidMetadataHandler(BaseHandler):
         """"Set the metadata"""
         wallet: BaseWallet = await context.inject(BaseWallet)
 
-        await wallet.replace_local_did_metadata(context.message.did, context.message.metadata if context.message.metadata else None)
+        await wallet.replace_local_did_metadata(context.message.did,
+                                                context.message.metadata if context.message.metadata else None)
         did_info = await wallet.get_local_did(context.message.did)
         result = get_reply_did(did_info)
         result.assign_thread_from(context.message)
