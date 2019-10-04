@@ -3,7 +3,6 @@
 # pylint: disable=invalid-name
 # pylint: disable=too-few-public-methods
 
-import logging
 from typing import Dict
 from marshmallow import fields
 from . import generate_model_schema, admin_only
@@ -11,8 +10,6 @@ from ..base_handler import BaseHandler, BaseResponder, RequestContext
 from ...wallet.base import BaseWallet, DIDInfo
 from ..models.base_record import BaseRecord, BaseRecordSchema
 from ...wallet.error import WalletNotFoundError
-
-LOGGER = logging.getLogger(__name__)
 
 PROTOCOL = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/admin-dids/1.0'
 
@@ -68,7 +65,7 @@ class DidRecord(BaseRecord):
     RECORD_TYPE = "did"
 
     class Meta:
-        """ConnectionRecord metadata."""
+        """DidRecord metadata."""
 
         schema_class = "DidRecordSchema"
 
@@ -106,8 +103,7 @@ GetListDids, GetListDidsSchema = generate_model_schema(
     msg_type=GET_LIST_DIDS,
     schema={
         'did': fields.Str(required=False),
-        'verkey': fields.Str(required=False),
-        'public': fields.Bool(required=False)
+        'verkey': fields.Str(required=False)
     }
 )
 
