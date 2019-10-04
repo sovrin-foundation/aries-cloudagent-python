@@ -4,10 +4,11 @@
 # pylint: disable=too-few-public-methods
 
 import logging
+from typing import Dict
 from marshmallow import fields
 from . import generate_model_schema, admin_only
 from ..base_handler import BaseHandler, BaseResponder, RequestContext
-from ...wallet.base import BaseWallet
+from ...wallet.base import BaseWallet, DIDInfo
 from ..models.base_record import BaseRecord, BaseRecordSchema
 from ...wallet.error import WalletNotFoundError
 
@@ -18,6 +19,7 @@ PROTOCOL = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/admin-dids/1.0'
 GET_LIST_DIDS = '{}/get-list-dids'.format(PROTOCOL)
 LIST_DIDS = '{}/list-dids'.format(PROTOCOL)
 CREATE_DID = '{}/create-did'.format(PROTOCOL)
+SET_DID_METADATA = '{}/set-did-metadata'.format(PROTOCOL)
 DID = '{}/did'.format(PROTOCOL)
 GET_PUBLIC_DID = '{}/get-public-did'.format(PROTOCOL)
 SET_PUBLIC_DID = '{}/set-public-did'.format(PROTOCOL)
@@ -35,6 +37,9 @@ MESSAGE_TYPES = {
     CREATE_DID:
         'aries_cloudagent.messaging.admin.dids'
         '.CreateDid',
+    SET_DID_METADATA:
+        'aries_cloudagent.messaging.admin.dids'
+        '.SetDidMetadata',
     DID:
         'aries_cloudagent.messaging.admin.did'
         '.Did',
@@ -72,15 +77,13 @@ class DidRecord(BaseRecord):
          *,
          did: str = None,
          verkey: str = None,
-         metadata: dict = None,
-         public: bool = False,
+         metadata: Dict[str, object] = None,
          **kwargs,
     ):
         """Initialize a new DidRecord."""
         super().__init__(None, None, **kwargs)
         self.did = did
         self.verkey = verkey
-        self.public = public
         self.metadata = metadata
 
 
@@ -94,8 +97,7 @@ class DidRecordSchema(BaseRecordSchema):
 
     did = fields.Str(required=True)
     verkey = fields.Str(required=True)
-    public = fields.Bool(required=True)
-    metadata = fields.Dict(keys=fields.Str(), values=fields.Str(), required=False)
+    metadata = fields.Dict(keys=fields.Str(), required=False)
 
 
 GetListDids, GetListDidsSchema = generate_model_schema(
@@ -129,7 +131,17 @@ CreateDid, CreateDidSchema = generate_model_schema(
     schema={
         'seed': fields.Str(required=False),
         'did': fields.Str(required=False),
-        'metadata': fields.Dict(keys=fields.Str(), values=fields.Str(), required=False)
+        'metadata': fields.Dict(keys=fields.Str(), required=False)
+    }
+)
+
+SetDidMetadata, SetDidMetadataSchema = generate_model_schema(
+    name='SetDidMetadata',
+    handler='aries_cloudagent.messaging.admin.dids.SetDidMetadataHandler',
+    msg_type=SET_DID_METADATA,
+    schema={
+        'did': fields.Str(required=True),
+        'metadata': fields.Dict(keys=fields.Str(), required=False)
     }
 )
 
@@ -138,7 +150,7 @@ Did, DidSchema = generate_model_schema(
     handler='aries_cloudagent.messaging.admin.PassHandler',
     msg_type=DID,
     schema={
-        'did': fields.Nested(DidRecordSchema, required=True)
+        'did': fields.Nested(DidRecordSchema, required=False)
     }
 )
 
@@ -189,6 +201,15 @@ GetDidEndpoint, GetDidEndpointSchema = generate_model_schema(
 )
 
 
+def get_reply_did(info: DIDInfo) -> Did:
+    if info:
+        return Did(did=DidRecord(did=info.did if info.did else None,
+                                 verkey=info.verkey if info.verkey else None,
+                                 metadata=info.metadata if info.metadata else None))
+    else:
+        return Did(did=None)
+
+
 class CreateDidHandler(BaseHandler):
     """Handler for creating local DIDs"""
 
@@ -202,7 +223,7 @@ class CreateDidHandler(BaseHandler):
 
         did_info = await wallet.create_local_did(seed, did, metadata)
 
-        result = Did(did=DidRecord(did=did_info.did, verkey=did_info.verkey, metadata=did_info.metadata, public=False))
+        result = get_reply_did(did_info)
         result.assign_thread_from(context.message)
         await responder.send_reply(result)
 
@@ -224,10 +245,56 @@ class ListDidHandler(BaseHandler):
             else:
                 dids = await wallet.get_local_dids()
 
-            results = [DidRecord(did=x.did, verkey=x.verkey, metadata=x.metadata if x.metadata else None, public=False).serialize() for x in dids]
+            results = [DidRecord(did=x.did,
+                                 verkey=x.verkey,
+                                 metadata=x.metadata if x.metadata else None) for x in dids]
         except WalletNotFoundError:
             pass
 
         did_list = ListDids(results=results)
         did_list.assign_thread_from(context.message)
         await responder.send_reply(did_list)
+
+
+class GetPublicDidHandler(BaseHandler):
+    """Handler that retrieves the currently set Public DID"""
+
+    @admin_only
+    async def handle(self, context: RequestContext, responder: BaseResponder):
+        """Look for the public DID"""
+        wallet: BaseWallet = await context.inject(BaseWallet)
+
+        did_info = await wallet.get_public_did()
+        result = get_reply_did(did_info)
+        result.assign_thread_from(context.message)
+        await responder.send_reply(result)
+
+
+class SetPublicDidHandler(BaseHandler):
+    """Handler that sets the current Public DID to the input"""
+
+    @admin_only
+    async def handle(self, context: RequestContext, responder: BaseResponder):
+        """"Set the public DID"""
+        wallet: BaseWallet = await context.inject(BaseWallet)
+
+        await wallet.set_public_did(context.message.did)
+        did_info = await wallet.get_public_did()
+        result = get_reply_did(did_info)
+        result.assign_thread_from(context.message)
+        await responder.send_reply(result)
+
+
+class SetDidMetadataHandler(BaseHandler):
+    """"Handler that sets the DID metadata"""
+
+    @admin_only
+    async def handle(self, context: RequestContext, responder: BaseResponder):
+        """"Set the metadata"""
+        wallet: BaseWallet = await context.inject(BaseWallet)
+
+        await wallet.replace_local_did_metadata(context.message.did, context.message.metadata if context.message.metadata else None)
+        did_info = await wallet.get_local_did(context.message.did)
+        result = get_reply_did(did_info)
+        result.assign_thread_from(context.message)
+        await responder.send_reply(result)
