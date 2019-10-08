@@ -20,8 +20,13 @@ def require_role(role):
     """
     def _require_role(func):
         @functools.wraps(func)
-        async def _wrapped(handler, context: RequestContext, responder: BaseResponder):
-            if not context.connection_record.their_role == role:
+        async def _wrapped(
+                handler,
+                context: RequestContext,
+                responder: BaseResponder):
+
+            if not context.connection_record \
+                    or context.connection_record.their_role != role:
                 report = ProblemReport(
                     explain_ltxt='This connection is not authorized to perform '
                                  'the requested action.',
