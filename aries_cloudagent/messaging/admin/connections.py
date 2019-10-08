@@ -259,6 +259,17 @@ class DeleteConnectionHandler(BaseHandler):
     @admin_only
     async def handle(self, context: RequestContext, responder: BaseResponder):
         """Handle delete connection request."""
+        if context.message.connection_id == \
+                context.connection_record.connection_id:
+
+            report = ProblemReport(
+                explain_ltxt='Current connection cannot be deleted.',
+                who_retries='none'
+            )
+            report.assign_thread_from(context.message)
+            await responder.send_reply(report)
+            return
+
         try:
             connection = await ConnectionRecord.retrieve_by_id(
                 context,
@@ -271,6 +282,8 @@ class DeleteConnectionHandler(BaseHandler):
             )
             report.assign_thread_from(context.message)
             await responder.send_reply(report)
+            return
+
         await connection.delete_record(context)
         ack = ConnectionAck()
         ack.assign_thread_from(context.message)
