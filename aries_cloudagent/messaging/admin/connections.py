@@ -11,6 +11,9 @@ from ..connections.manager import ConnectionManager
 from ..connections.models.connection_record import (
     ConnectionRecord, ConnectionRecordSchema
 )
+from ..connections.messages.connection_invitation import (
+    ConnectionInvitation,
+)
 from ..problem_report.message import ProblemReport
 from ...storage.error import StorageNotFoundError
 
@@ -195,6 +198,22 @@ ReceiveInvitation, ReceiveInvitationSchema = generate_model_schema(
     }
 )
 
+
+class ReceiveInvitationHandler(BaseHandler):
+    """Handler for receive invitation request."""
+
+    @admin_only
+    async def handle(self, context: RequestContext, responder: BaseResponder):
+        """Handle recieve invitation request."""
+        connection_mgr = ConnectionManager(context)
+        invitation = ConnectionInvitation.from_url(context.messaging.invitation)
+        connection = await connection_mgr.receive_invitation(
+            invitation, accept=context.message.accept
+        )
+        connection_resp = Connection(connection=connection)
+        await responder.send_reply(connection_resp)
+
+
 AcceptInvitation, AcceptInvitationSchema = generate_model_schema(
     name='AcceptInvitation',
     handler='aries_cloudagent.messaging.admin.connections.AcceptInvitationHandler',
@@ -252,6 +271,7 @@ UpdateConnection, UpdateConnectionSchema = generate_model_schema(
         'role': fields.Str(required=False)
     }
 )
+
 
 class DeleteConnectionHandler(BaseHandler):
     """Handler for delete connection request."""
