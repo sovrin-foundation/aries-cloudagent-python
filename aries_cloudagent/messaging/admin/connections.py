@@ -194,7 +194,10 @@ ReceiveInvitation, ReceiveInvitationSchema = generate_model_schema(
     msg_type=RECEIVE_INVITATION,
     schema={
         'invitation': fields.Str(required=True),
-        'accept': fields.Boolean(missing=False)
+        'accept': fields.Str(
+            validate=validate.OneOf(['none', 'auto']),
+            missing=False
+        )
     }
 )
 
@@ -206,7 +209,7 @@ class ReceiveInvitationHandler(BaseHandler):
     async def handle(self, context: RequestContext, responder: BaseResponder):
         """Handle recieve invitation request."""
         connection_mgr = ConnectionManager(context)
-        invitation = ConnectionInvitation.from_url(context.messaging.invitation)
+        invitation = ConnectionInvitation.from_url(context.message.invitation)
         connection = await connection_mgr.receive_invitation(
             invitation, accept=context.message.accept
         )
