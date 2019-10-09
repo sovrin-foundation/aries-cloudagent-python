@@ -20,16 +20,16 @@ SCHEMA = '{}/schema'.format(PROTOCOL)
 
 MESSAGE_TYPES = {
     SEND_SCHEMA:
-        'aries_cloudagent.messages.admin.schemas'
+        'aries_cloudagent.messaging.admin.schemas'
         '.SendSchema',
     SCHEMA_ID:
-        'aries_cloudagent.messages.admin.schemas'
+        'aries_cloudagent.messaging.admin.schemas'
         '.SchemaID',
     SCHEMA_GET:
-        'aries_cloudagent.messages.admin.schemas'
+        'aries_cloudagent.messaging.admin.schemas'
         '.SchemaGet',
     SCHEMA:
-        'aries_cloudagent.messages.admin.schemas'
+        'aries_cloudagent.messaging.admin.schemas'
         '.Schema'
 }
 
