@@ -44,7 +44,7 @@ MESSAGE_TYPES = {
 
 
 class SchemaRecord(BaseRecord):
-    """Represents a Pool."""
+    """Represents a Schema."""
 
     RECORD_ID_NAME = "schema_id"
     RECORD_TYPE = "schema"
@@ -148,7 +148,8 @@ class SendSchemaHandler(BaseHandler):
             schema_id=schema_id,
             schema_name=context.message.schema_name,
             schema_version=context.message.schema_version,
-            attributes=context.message.attributes
+            attributes=context.message.attributes,
+            state=SchemaRecord.STATE_WRITTEN
         )
         await schema.save(context, reason="Committed to ledger")
 
