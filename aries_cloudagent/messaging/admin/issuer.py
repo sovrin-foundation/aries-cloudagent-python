@@ -54,12 +54,12 @@ class SendHandler(BaseHandler):
     @admin_only
     async def handle(self, context: RequestContext, responder: BaseResponder):
         """Handle received send request."""
-        connection_id = context.message.connection_id
+        connection_id = str(context.message.connection_id)
         credential_definition_id = context.message.credential_definition_id
         comment = context.message.comment
         credential_proposal = CredentialProposal(
             comment=comment,
-            credential_proposal=context.message.credential_preview,
+            credential_proposal=context.message.credential_proposal,
             cred_def_id=credential_definition_id,
         )
 
@@ -132,7 +132,7 @@ class CredGetListHandler(BaseHandler):
 
         tag_filter = dict(
             filter(lambda item: item[1] is not None, {
-                'state': V10CredentialExchange.STATE_ISSUED,
+                # 'state': V10CredentialExchange.STATE_ISSUED,
                 'connection_id': context.message.connection_id,
                 'credential_definition_id': context.message.credential_definition_id,
                 'schema_id': context.message.schema_id

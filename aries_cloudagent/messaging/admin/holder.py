@@ -60,10 +60,10 @@ class SendProposalHandler(BaseHandler):
     @admin_only
     async def handle(self, context: RequestContext, responder: BaseResponder):
         """Handle received send proposal request."""
-        connection_id = context.message.connection_id
+        connection_id = str(context.message.connection_id)
         credential_definition_id = context.message.credential_definition_id
         comment = context.message.comment
-        credential_preview = context.message.credential_preview
+        credential_preview = context.message.credential_proposal
 
         credential_manager = CredentialManager(context)
 
@@ -136,7 +136,7 @@ class CredGetListHandler(BaseHandler):
 
         tag_filter = dict(
             filter(lambda item: item[1] is not None, {
-                'state': V10CredentialExchange.STATE_CREDENTIAL_RECEIVED,
+                # 'state': V10CredentialExchange.STATE_CREDENTIAL_RECEIVED,
                 'connection_id': context.message.connection_id,
                 'credential_definition_id': context.message.credential_definition_id,
                 'schema_id': context.message.schema_id
