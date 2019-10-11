@@ -138,7 +138,7 @@ class SendCredDefHandler(BaseHandler):
         )
         await cred_def_record.save(
             context,
-            "Committed credential definition to ledger"
+            reason="Committed credential definition to ledger"
         )
 
         result = CredDefID(cred_def_id=credential_definition_id)
