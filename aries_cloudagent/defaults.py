@@ -34,6 +34,7 @@ from .messaging.admin.static_connections import \
 from .messaging.admin.schemas import MESSAGE_TYPES as SCHEMA_ADMIN_MESSAGES
 from .messaging.admin.credential_definitions import MESSAGE_TYPES as CRED_DEF_ADMIN_MESSAGES
 from .messaging.admin.dids import MESSAGE_TYPES as DID_ADMIN_MESSAGES
+from .messaging.admin.holder import MESSAGE_TYPES as HOLDER_ADMIN_MESSAGES
 
 
 def default_protocol_registry() -> ProtocolRegistry:
@@ -57,6 +58,7 @@ def default_protocol_registry() -> ProtocolRegistry:
         SCHEMA_ADMIN_MESSAGES,
         CRED_DEF_ADMIN_MESSAGES,
         DID_ADMIN_MESSAGES,
+        HOLDER_ADMIN_MESSAGES,
         {PROBLEM_REPORT: ProblemReport},
     )
 
