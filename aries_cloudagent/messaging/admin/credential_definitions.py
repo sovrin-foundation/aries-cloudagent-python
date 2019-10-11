@@ -12,6 +12,8 @@ from ..base_handler import BaseHandler, BaseResponder, RequestContext
 from ...ledger.base import BaseLedger
 from ..models.base_record import BaseRecord, BaseRecordSchema
 
+from ..problem_report.message import ProblemReport
+
 
 PROTOCOL = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/admin-credential-definitions/1.0'
 
@@ -41,7 +43,7 @@ MESSAGE_TYPES = {
 class CredDefRecord(BaseRecord):
     """Represents a Schema."""
 
-    RECORD_ID_NAME = "cred_def_id"
+    RECORD_ID_NAME = "record_id"
     RECORD_TYPE = "cred_def"
 
     STATE_UNWRITTEN = "unwritten"
@@ -113,7 +115,7 @@ SendCredDef, SendCredDefSchema = generate_model_schema(
 CredDefID, CredDefIDSchema = generate_model_schema(
     name='CredDefID',
     handler='aries_cloudagent.messaging.admin.PassHandler',
-    msg_type=SEND_CRED_DEF,
+    msg_type=CRED_DEF_ID,
     schema={
         'cred_def_id': fields.Str(required=True)
     }
@@ -127,14 +129,23 @@ class SendCredDefHandler(BaseHandler):
     async def handle(self, context: RequestContext, responder: BaseResponder):
         """Handle received send cred def request."""
         ledger: BaseLedger = await context.inject(BaseLedger)
-        async with ledger:
-            credential_definition_id = await shield(
-                ledger.send_credential_definition(context.message.schema_id)
+        try:
+            async with ledger:
+                credential_definition_id = await shield(
+                    ledger.send_credential_definition(context.message.schema_id)
+                )
+        except Exception as err:
+            report = ProblemReport(
+                explain_ltxt='Failed to send to ledger; Error: {}'.format(err),
+                who_retries='none'
             )
+            await responder.send_reply(report)
+            return
 
         cred_def_record = CredDefRecord(
             cred_def_id=credential_definition_id,
-            schema_id=context.message.schema_id
+            schema_id=context.message.schema_id,
+            state=CredDefRecord.STATE_WRITTEN
         )
         await cred_def_record.save(
             context,
@@ -159,7 +170,7 @@ CredDefGet, CredDefGetSchema = generate_model_schema(
 CredDef, CredDefSchema = generate_model_schema(
     name="CredDef",
     handler='aries_cloudagent.messaging.admin.PassHandler',
-    msg_type=CRED_DEF_GET,
+    msg_type=CRED_DEF,
     schema={
         'credential_definition': fields.Dict()
     }
