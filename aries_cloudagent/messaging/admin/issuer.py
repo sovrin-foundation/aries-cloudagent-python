@@ -27,9 +27,9 @@ from ..problem_report.message import ProblemReport
 
 PROTOCOL = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/admin-issuer/1.0'
 
-SEND = '{}/send'
-CREDENTIALS_GET_LIST = '{}/credentials-get-list'
-CREDENTIALS_LIST = '{}/credentials-list'
+SEND = '{}/send'.format(PROTOCOL)
+CREDENTIALS_GET_LIST = '{}/credentials-get-list'.format(PROTOCOL)
+CREDENTIALS_LIST = '{}/credentials-list'.format(PROTOCOL)
 
 MESSAGE_TYPES = {
     SEND:

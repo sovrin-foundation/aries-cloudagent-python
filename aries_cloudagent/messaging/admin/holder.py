@@ -25,10 +25,10 @@ from ..problem_report.message import ProblemReport
 
 PROTOCOL = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/admin-holder/1.0'
 
-SEND_PROPOSAL = '{}/send-proposal'
-CRED_EXCHANGE = '{}/credential-exchange'
-CREDENTIALS_GET_LIST = '{}/credentials-get-list'
-CREDENTIALS_LIST = '{}/credentials-list'
+SEND_PROPOSAL = '{}/send-proposal'.format(PROTOCOL)
+CRED_EXCHANGE = '{}/credential-exchange'.format(PROTOCOL)
+CREDENTIALS_GET_LIST = '{}/credentials-get-list'.format(PROTOCOL)
+CREDENTIALS_LIST = '{}/credentials-list'.format(PROTOCOL)
 
 MESSAGE_TYPES = {
     SEND_PROPOSAL:
