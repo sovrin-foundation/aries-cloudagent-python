@@ -55,12 +55,13 @@ class CredDefRecord(BaseRecord):
     def __init__(
             self,
             *,
+            record_id: str = None,
             cred_def_id: str = None,
             schema_id: str = None,
             state: str = None,
             **kwargs):
         """Initialize a new SchemaRecord."""
-        super().__init__(None, state or self.STATE_UNWRITTEN, **kwargs)
+        super().__init__(record_id, state or self.STATE_UNWRITTEN, **kwargs)
         self.cred_def_id = cred_def_id
         self.schema_id = schema_id
 
@@ -80,6 +81,7 @@ class CredDefRecord(BaseRecord):
         return {
             prop: getattr(self, prop)
             for prop in (
+                'cred_def_id',
                 'schema_id',
                 'state',
             )

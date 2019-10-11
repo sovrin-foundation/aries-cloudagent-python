@@ -60,6 +60,7 @@ class SchemaRecord(BaseRecord):
     def __init__(
             self,
             *,
+            record_id: str = None,
             schema_id: str = None,
             schema_name: str = None,
             schema_version: str = None,
@@ -67,7 +68,7 @@ class SchemaRecord(BaseRecord):
             state: str = None,
             **kwargs):
         """Initialize a new SchemaRecord."""
-        super().__init__(None, state or self.STATE_UNWRITTEN, **kwargs)
+        super().__init__(record_id, state or self.STATE_UNWRITTEN, **kwargs)
         self.schema_id = schema_id
         self.schema_name = schema_name
         self.schema_version = schema_version
@@ -75,7 +76,7 @@ class SchemaRecord(BaseRecord):
 
     @property
     def record_id(self) -> str:
-        """Accessor for this schema's id."""
+        """Get the id."""
         return self._id
 
     @property
