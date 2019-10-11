@@ -3,6 +3,9 @@
 import sys
 import logging
 import functools
+
+import marshmallow
+
 from ..agent_message import AgentMessage, AgentMessageSchema
 from ..base_handler import BaseHandler, BaseResponder, RequestContext
 from ..problem_report.message import ProblemReport
@@ -80,6 +83,15 @@ def generate_model_schema(
     use that here as the model_class must be set in the Meta inner-class of
     AgentMessageSchema's).
     """
+    if isinstance(schema, dict):
+        slots = list(schema.keys())
+        schema_dict = schema
+    elif hasattr(schema, '_declared_fields'):
+        slots = list(schema._declared_fields.keys())
+        schema_dict = schema._declared_fields
+    else:
+        raise TypeError('Schema must be dict or class defining _declared_fields')
+
     Model = type(
         name,
         (AgentMessage,),
@@ -93,7 +105,7 @@ def generate_model_schema(
                 }
             ),
             '__init__': generic_init,
-            '__slots__': list(schema.keys())
+            '__slots__': slots
         }
     )
     Model.__module__ = sys._getframe(1).f_globals['__name__']
@@ -107,7 +119,7 @@ def generate_model_schema(
                     'model_class': Model,
                 }
             ),
-            **schema
+            **schema_dict
         }
     )
     Schema.__module__ = sys._getframe(1).f_globals['__name__']
