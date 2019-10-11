@@ -86,11 +86,11 @@ def generate_model_schema(
     if isinstance(schema, dict):
         slots = list(schema.keys())
         schema_dict = schema
-    elif hasattr(schema, '__bases__') and marshmallow.Schema in schema.__bases__:
+    elif hasattr(schema, '_declared_fields'):
         slots = list(schema._declared_fields.keys())
         schema_dict = schema._declared_fields
     else:
-        raise TypeError('Schema must be dict or marshmallow Schema')
+        raise TypeError('Schema must be dict or class defining _declared_fields')
 
     Model = type(
         name,
