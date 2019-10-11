@@ -60,11 +60,12 @@ class CredDefRecord(BaseRecord):
             state: str = None,
             **kwargs):
         """Initialize a new SchemaRecord."""
-        super().__init__(cred_def_id, state or self.STATE_UNWRITTEN, **kwargs)
+        super().__init__(None, state or self.STATE_UNWRITTEN, **kwargs)
+        self.cred_def_id = cred_def_id
         self.schema_id = schema_id
 
     @property
-    def schema_id(self) -> str:
+    def record_id(self) -> str:
         """Accessor for this schema's id."""
         return self._id
 

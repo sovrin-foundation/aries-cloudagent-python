@@ -46,7 +46,7 @@ MESSAGE_TYPES = {
 class SchemaRecord(BaseRecord):
     """Represents a Schema."""
 
-    RECORD_ID_NAME = "schema_id"
+    RECORD_ID_NAME = "record_id"
     RECORD_TYPE = "schema"
 
     STATE_UNWRITTEN = "unwritten"
@@ -67,13 +67,14 @@ class SchemaRecord(BaseRecord):
             state: str = None,
             **kwargs):
         """Initialize a new SchemaRecord."""
-        super().__init__(schema_id, state or self.STATE_UNWRITTEN, **kwargs)
+        super().__init__(None, state or self.STATE_UNWRITTEN, **kwargs)
+        self.schema_id = schema_id
         self.schema_name = schema_name
         self.schema_version = schema_version
         self.attributes = attributes
 
     @property
-    def schema_id(self) -> str:
+    def record_id(self) -> str:
         """Accessor for this schema's id."""
         return self._id
 
@@ -88,6 +89,7 @@ class SchemaRecord(BaseRecord):
         return {
             prop: getattr(self, prop)
             for prop in (
+                'schema_id',
                 'schema_name',
                 'schema_version',
                 'state',
