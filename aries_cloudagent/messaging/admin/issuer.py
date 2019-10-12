@@ -166,8 +166,8 @@ class RequestPresHandler(BaseHandler):
         comment = context.message.comment
 
         indy_proof_request = context.message.proof_request
-        if not indy_proof_request.nonce:
-            indy_proof_request.nonce = str(uuid4().int)
+        if not indy_proof_request.get('nonce'):
+            indy_proof_request['nonce'] = str(uuid4().int)
 
         presentation_request_message = PresentationRequest(
             comment=comment,
@@ -268,8 +268,7 @@ class PresGetListHandler(BaseHandler):
                 # 'state': V10PresentialExchange.STATE_CREDENTIAL_RECEIVED,
                 'role': V10PresentationExchange.ROLE_VERIFIER,
                 'connection_id': context.message.connection_id,
-                'credential_definition_id': context.message.credential_definition_id,
-                'schema_id': context.message.schema_id
+                'verified': context.message.verified,
             }.items())
         )
         records = await V10PresentationExchange.query(context, tag_filter)

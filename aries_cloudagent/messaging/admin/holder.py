@@ -284,10 +284,9 @@ class PresGetListHandler(BaseHandler):
         tag_filter = dict(
             filter(lambda item: item[1] is not None, {
                 # 'state': V10PresentialExchange.STATE_CREDENTIAL_RECEIVED,
-                'role': V10PresentationExchange.ROLE_HOLDER,
+                'role': V10PresentationExchange.ROLE_PROVER,
                 'connection_id': context.message.connection_id,
-                'credential_definition_id': context.message.credential_definition_id,
-                'schema_id': context.message.schema_id
+                'verified': context.message.verified,
             }.items())
         )
         records = await V10PresentationExchange.query(context, tag_filter)
