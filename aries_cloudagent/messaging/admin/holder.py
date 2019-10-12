@@ -22,6 +22,7 @@ from ..issue_credential.v1_0.manager import CredentialManager
 from ..connections.models.connection_record import ConnectionRecord
 from ...storage.error import StorageNotFoundError
 from ..problem_report.message import ProblemReport
+from ...holder.base import BaseHolder
 
 PROTOCOL = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/admin-holder/1.0'
 
@@ -124,6 +125,9 @@ CredList, CredListSchema = generate_model_schema(
     handler='aries_cloudagent.messaging.admin.PassHandler',
     msg_type=CREDENTIALS_LIST,
     schema=V10CredentialExchangeListResultSchema
+    # schema={
+    #     'results': fields.List(fields.Dict())
+    # }
 )
 
 
@@ -134,9 +138,15 @@ class CredGetListHandler(BaseHandler):
     async def handle(self, context: RequestContext, responder: BaseResponder):
         """Handle received get cred list request."""
 
+        # holder: BaseHolder = await context.inject(BaseHolder)
+        # credentials = await holder.get_credentials(0, 100, {})
+        # cred_list = CredList(results=credentials)
+        # await responder.send_reply(cred_list)
+
         tag_filter = dict(
             filter(lambda item: item[1] is not None, {
                 # 'state': V10CredentialExchange.STATE_CREDENTIAL_RECEIVED,
+                'role': V10CredentialExchange.ROLE_HOLDER,
                 'connection_id': context.message.connection_id,
                 'credential_definition_id': context.message.credential_definition_id,
                 'schema_id': context.message.schema_id

@@ -133,6 +133,7 @@ class CredGetListHandler(BaseHandler):
         tag_filter = dict(
             filter(lambda item: item[1] is not None, {
                 # 'state': V10CredentialExchange.STATE_ISSUED,
+                'role': V10CredentialExchange.ROLE_ISSUER,
                 'connection_id': context.message.connection_id,
                 'credential_definition_id': context.message.credential_definition_id,
                 'schema_id': context.message.schema_id
