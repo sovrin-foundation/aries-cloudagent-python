@@ -1,0 +1,11 @@
+version: '3'
+services:
+  ngrok:
+    container_name: ngrok
+    image: wernight/ngrok
+    command: ngrok http agent:3000
+
+  agent:
+    build: .
+    depends_on:
+      - ngrok 
