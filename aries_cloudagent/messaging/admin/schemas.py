@@ -101,6 +101,7 @@ class SchemaRecord(BaseRecord):
                 'schema_name',
                 'schema_version',
                 'state',
+                'author'
             )
         }
 

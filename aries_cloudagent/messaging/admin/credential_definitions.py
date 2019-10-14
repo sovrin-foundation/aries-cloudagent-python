@@ -95,6 +95,7 @@ class CredDefRecord(BaseRecord):
                 'cred_def_id',
                 'schema_id',
                 'state',
+                'author',
             )
         }
 
