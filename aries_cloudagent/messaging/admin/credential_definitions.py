@@ -8,11 +8,13 @@ from asyncio import shield
 from marshmallow import fields
 
 from . import generate_model_schema, admin_only
+from .schemas import SchemaRecord
 from ..base_handler import BaseHandler, BaseResponder, RequestContext
-from ...ledger.base import BaseLedger
 from ..models.base_record import BaseRecord, BaseRecordSchema
-
 from ..problem_report.message import ProblemReport
+from ...ledger.base import BaseLedger
+from ...storage.error import StorageNotFoundError
+from ...config.injection_context import InjectionContext
 
 
 PROTOCOL = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/admin-credential-definitions/1.0'
@@ -46,6 +48,9 @@ class CredDefRecord(BaseRecord):
     RECORD_ID_NAME = "record_id"
     RECORD_TYPE = "cred_def"
 
+    AUTHOR_SELF = "self"
+    AUTHOR_OTHER = "other"
+
     STATE_UNWRITTEN = "unwritten"
     STATE_WRITTEN = "written"
 
@@ -60,12 +65,16 @@ class CredDefRecord(BaseRecord):
             record_id: str = None,
             cred_def_id: str = None,
             schema_id: str = None,
+            attributes: [str] = None,
+            author: str = None,
             state: str = None,
             **kwargs):
         """Initialize a new SchemaRecord."""
         super().__init__(record_id, state or self.STATE_UNWRITTEN, **kwargs)
         self.cred_def_id = cred_def_id
         self.schema_id = schema_id
+        self.attributes = attributes
+        self.author = author
 
     @property
     def record_id(self) -> str:
@@ -75,7 +84,7 @@ class CredDefRecord(BaseRecord):
     @property
     def record_value(self) -> dict:
         """Get record value."""
-        return {}
+        return {'attributes': self.attributes}
 
     @property
     def record_tags(self) -> dict:
@@ -86,8 +95,20 @@ class CredDefRecord(BaseRecord):
                 'cred_def_id',
                 'schema_id',
                 'state',
+                'author',
             )
         }
+
+    @classmethod
+    async def retrieve_by_cred_def_id(
+            cls,
+            context: InjectionContext,
+            cred_def_id: str) -> "CredDefRecord":
+        """Retrieve a schema record by cred_def_id."""
+        return await cls.retrieve_by_tag_filter(
+            context,
+            {'cred_def_id': cred_def_id}
+        )
 
 
 class CredDefRecordSchema(BaseRecordSchema):
@@ -100,6 +121,8 @@ class CredDefRecordSchema(BaseRecordSchema):
 
     cred_def_id = fields.Str(required=False)
     schema_id = fields.Str(required=False)
+    attributes = fields.List(fields.Str(), required=False)
+    author = fields.Str(required=False)
 
 
 SendCredDef, SendCredDefSchema = generate_model_schema(
@@ -129,6 +152,29 @@ class SendCredDefHandler(BaseHandler):
     async def handle(self, context: RequestContext, responder: BaseResponder):
         """Handle received send cred def request."""
         ledger: BaseLedger = await context.inject(BaseLedger)
+        # If no schema record, make one
+        try:
+            schema_record = await SchemaRecord.retrieve_by_schema_id(
+                context,
+                schema_id=context.message.schema_id
+            )
+        except StorageNotFoundError:
+            # Schema will be cached so retrieving here is not
+            # any less efficient (schema is retrieved in
+            # send_credential_definition).
+            async with ledger:
+                schema = await ledger.get_schema(context.message.schema_id)
+
+            schema_record = SchemaRecord(
+                schema_id=schema['id'],
+                schema_name=schema['name'],
+                schema_version=schema['version'],
+                attributes=schema['attrNames'],
+                state=SchemaRecord.STATE_WRITTEN,
+                author=SchemaRecord.AUTHOR_OTHER
+            )
+            await schema_record.save(context, reason='Retrieved from ledger')
+
         try:
             async with ledger:
                 credential_definition_id = await shield(
@@ -145,7 +191,9 @@ class SendCredDefHandler(BaseHandler):
         cred_def_record = CredDefRecord(
             cred_def_id=credential_definition_id,
             schema_id=context.message.schema_id,
-            state=CredDefRecord.STATE_WRITTEN
+            attributes=schema_record.attributes,
+            state=CredDefRecord.STATE_WRITTEN,
+            author=CredDefRecord.AUTHOR_SELF
         )
         await cred_def_record.save(
             context,
@@ -171,9 +219,7 @@ CredDef, CredDefSchema = generate_model_schema(
     name="CredDef",
     handler='aries_cloudagent.messaging.admin.PassHandler',
     msg_type=CRED_DEF,
-    schema={
-        'credential_definition': fields.Dict()
-    }
+    schema=CredDefRecordSchema
 )
 
 
@@ -183,13 +229,60 @@ class CredDefGetHandler(BaseHandler):
     @admin_only
     async def handle(self, context: RequestContext, responder: BaseResponder):
         """Handle received cred def get requests."""
+        try:
+            cred_def_record = await CredDefRecord.retrieve_by_cred_def_id(
+                context,
+                context.message.cred_def_id
+            )
+            cred_def = CredDef(**cred_def_record.serialize())
+            cred_def.assign_thread_from(context.message)
+            await responder.send_reply(cred_def)
+            return
+        except StorageNotFoundError:
+            pass
 
         ledger: BaseLedger = await context.inject(BaseLedger)
         async with ledger:
             credential_definition = await ledger.get_credential_definition(
                 context.message.cred_def_id
             )
-        cred_def = CredDef(credential_definition=credential_definition)
+            schema_id = await ledger.credential_definition_id2schema_id(
+                credential_definition['id']
+            )
+
+        try:
+            schema_record = await SchemaRecord.retrieve_by_schema_id(
+                context,
+                schema_id
+            )
+        except StorageNotFoundError:
+            # This may be less efficient
+            async with ledger:
+                schema = await ledger.get_schema(schema_id)
+
+            schema_record = SchemaRecord(
+                schema_id=schema['id'],
+                schema_name=schema['name'],
+                schema_version=schema['version'],
+                attributes=schema['attrNames'],
+                state=SchemaRecord.STATE_WRITTEN,
+                author=SchemaRecord.AUTHOR_OTHER
+            )
+            await schema_record.save(context, reason='Retrieved from ledger')
+
+        cred_def_record = CredDefRecord(
+            cred_def_id=credential_definition['id'],
+            schema_id=schema_record.schema_id,
+            attributes=schema_record.attributes,
+            state=CredDefRecord.STATE_WRITTEN,
+            author=CredDefRecord.AUTHOR_OTHER
+        )
+        await cred_def_record.save(
+            context,
+            reason='Retrieved from ledger'
+        )
+
+        cred_def = CredDef(**cred_def_record.serialize())
         cred_def.assign_thread_from(context.message)
         await responder.send_reply(cred_def)
 

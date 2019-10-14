@@ -9,8 +9,10 @@ from marshmallow import fields
 
 from . import generate_model_schema, admin_only
 from ..base_handler import BaseHandler, BaseResponder, RequestContext
-from ...ledger.base import BaseLedger
 from ..models.base_record import BaseRecord, BaseRecordSchema
+from ...ledger.base import BaseLedger
+from ...storage.error import StorageNotFoundError
+from ...config.injection_context import InjectionContext
 
 PROTOCOL = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/admin-schemas/1.0'
 
@@ -49,6 +51,9 @@ class SchemaRecord(BaseRecord):
     RECORD_ID_NAME = "record_id"
     RECORD_TYPE = "schema"
 
+    AUTHOR_SELF = "self"
+    AUTHOR_OTHER = "other"
+
     STATE_UNWRITTEN = "unwritten"
     STATE_WRITTEN = "written"
 
@@ -64,6 +69,7 @@ class SchemaRecord(BaseRecord):
             schema_id: str = None,
             schema_name: str = None,
             schema_version: str = None,
+            author: str = None,
             attributes: [str] = None,
             state: str = None,
             **kwargs):
@@ -72,6 +78,7 @@ class SchemaRecord(BaseRecord):
         self.schema_id = schema_id
         self.schema_name = schema_name
         self.schema_version = schema_version
+        self.author=author
         self.attributes = attributes
 
     @property
@@ -94,8 +101,20 @@ class SchemaRecord(BaseRecord):
                 'schema_name',
                 'schema_version',
                 'state',
+                'author'
             )
         }
+
+    @classmethod
+    async def retrieve_by_schema_id(
+            cls,
+            context: InjectionContext,
+            schema_id: str) -> "SchemaRecord":
+        """Retrieve a schema record by schema_id."""
+        return await cls.retrieve_by_tag_filter(
+            context,
+            {'schema_id': schema_id}
+        )
 
 
 class SchemaRecordSchema(BaseRecordSchema):
@@ -109,6 +128,7 @@ class SchemaRecordSchema(BaseRecordSchema):
     schema_id = fields.Str(required=False)
     schema_name = fields.Str(required=False)
     schema_version = fields.Str(required=False)
+    author = fields.Str(required=False)
     attributes = fields.List(fields.Str(), required=False)
 
 
@@ -152,7 +172,8 @@ class SendSchemaHandler(BaseHandler):
             schema_name=context.message.schema_name,
             schema_version=context.message.schema_version,
             attributes=context.message.attributes,
-            state=SchemaRecord.STATE_WRITTEN
+            state=SchemaRecord.STATE_WRITTEN,
+            author=SchemaRecord.AUTHOR_SELF,
         )
         await schema.save(context, reason="Committed to ledger")
 
@@ -173,9 +194,7 @@ Schema, SchemaSchema = generate_model_schema(
     name='Schema',
     handler='aries_cloudagent.messaging.admin.PassHandler',
     msg_type=SCHEMA,
-    schema={
-        'schema': fields.Dict()
-    }
+    schema=SchemaRecordSchema
 )
 
 
@@ -185,12 +204,33 @@ class SchemaGetHandler(BaseHandler):
     @admin_only
     async def handle(self, context: RequestContext, responder: BaseResponder):
         """Handle received schema get request."""
+        try:
+            schema_record = await SchemaRecord.retrieve_by_schema_id(
+                context,
+                context.message.schema_id
+            )
+            schema_msg = Schema(**schema_record.serialize())
+            schema_msg.assign_thread_from(context.message)
+            await responder.send_reply(schema_msg)
+            return
+        except StorageNotFoundError:
+            pass
 
         ledger: BaseLedger = await context.inject(BaseLedger)
         async with ledger:
             schema = await ledger.get_schema(context.message.schema_id)
 
-        schema_msg = Schema(schema=schema)
+        schema_record = SchemaRecord(
+            schema_id=schema['id'],
+            schema_name=schema['name'],
+            schema_version=schema['version'],
+            attributes=schema['attrNames'],
+            state=SchemaRecord.STATE_WRITTEN,
+            author=SchemaRecord.AUTHOR_OTHER
+        )
+        await schema_record.save(context, reason='Retrieved from ledger')
+
+        schema_msg = Schema(**schema_record.serialize())
         schema_msg.assign_thread_from(context.message)
         await responder.send_reply(schema_msg)
 
@@ -199,8 +239,7 @@ SchemaGetList, SchemaGetListSchema = generate_model_schema(
     name='SchemaGetList',
     handler='aries_cloudagent.messaging.admin.schemas.SchemaGetListHandler',
     msg_type=SCHEMA_GET_LIST,
-    schema={
-    }
+    schema={}
 )
 
 SchemaList, SchemaListSchema = generate_model_schema(
