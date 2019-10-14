@@ -9,7 +9,6 @@ from uuid import uuid4
 from marshmallow import fields
 
 from . import generate_model_schema, admin_only
-from .holder import CredExchange, PresExchange
 from ..base_handler import BaseHandler, BaseResponder, RequestContext
 from ..decorators.attach_decorator import AttachDecorator
 from ..issue_credential.v1_0.routes import (
@@ -18,6 +17,7 @@ from ..issue_credential.v1_0.routes import (
 )
 from ..issue_credential.v1_0.models.credential_exchange import (
     V10CredentialExchange,
+    V10CredentialExchangeSchema,
 )
 from ..issue_credential.v1_0.messages.credential_proposal import (
     CredentialProposal
@@ -28,6 +28,7 @@ from ..present_proof.v1_0.routes import (
 )
 from ..present_proof.v1_0.models.presentation_exchange import (
     V10PresentationExchange,
+    V10PresentationExchangeSchema,
 )
 from ..present_proof.v1_0.messages.presentation_request import PresentationRequest
 from ..present_proof.v1_0.manager import PresentationManager
@@ -40,6 +41,8 @@ PROTOCOL = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/admin-issuer/1.0'
 
 SEND_CREDENTIAL = '{}/send-credential'.format(PROTOCOL)
 REQUEST_PRESENTATION = '{}/request-presentation'.format(PROTOCOL)
+ISSUER_CRED_EXCHANGE = '{}/credential-exchange'.format(PROTOCOL)
+ISSUER_PRES_EXCHANGE = '{}/presentation-exchange'.format(PROTOCOL)
 CREDENTIALS_GET_LIST = '{}/credentials-get-list'.format(PROTOCOL)
 CREDENTIALS_LIST = '{}/credentials-list'.format(PROTOCOL)
 PRESENTATIONS_GET_LIST = '{}/presentations-get-list'.format(PROTOCOL)
@@ -65,6 +68,12 @@ SendCred, SendCredSchema = generate_model_schema(
     handler='aries_cloudagent.messaging.admin.issuer.SendCredHandler',
     msg_type=SEND_CREDENTIAL,
     schema=V10CredentialProposalRequestSchema
+)
+IssuerCredExchange, IssuerCredExchangeSchema = generate_model_schema(
+    name='IssuerCredExchange',
+    handler='aries_cloudagent.messaging.admin.PassHandler',
+    msg_type=ISSUER_CRED_EXCHANGE,
+    schema=V10CredentialExchangeSchema
 )
 
 
@@ -119,7 +128,7 @@ class SendCredHandler(BaseHandler):
                 responder.send
             )
         )
-        cred_exchange = CredExchange(**credential_exchange_record.serialize())
+        cred_exchange = IssuerCredExchange(**credential_exchange_record.serialize())
         cred_exchange.assign_thread_from(context.message)
         await responder.send_reply(cred_exchange)
 
@@ -129,6 +138,12 @@ RequestPres, RequestPresSchema = generate_model_schema(
     handler='aries_cloudagent.messaging.admin.issuer.RequestPresHandler',
     msg_type=REQUEST_PRESENTATION,
     schema=V10PresentationRequestRequestSchema,
+)
+IssuerPresExchange, IssuerPresExchangeSchema = generate_model_schema(
+    name='IssuerPresExchange',
+    handler='aries_cloudagent.messaging.admin.PassHandler',
+    msg_type=ISSUER_PRES_EXCHANGE,
+    schema=V10PresentationExchangeSchema
 )
 
 
@@ -190,7 +205,7 @@ class RequestPresHandler(BaseHandler):
             connection_id=connection_id
         )
 
-        pres_exchange = PresExchange(**presentation_exchange_record.serialize())
+        pres_exchange = IssuerPresExchange(**presentation_exchange_record.serialize())
         pres_exchange.assign_thread_from(context.message)
         await responder.send_reply(pres_exchange)
 
