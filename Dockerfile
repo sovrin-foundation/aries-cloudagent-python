@@ -1,7 +1,14 @@
 FROM bcgovimages/von-image:py36-1.11-1
 
-RUN curl -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -o jq
-RUN chmod +x jq
+USER root
+ADD https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 ./jq
+RUN chmod +x ./jq
+COPY medici-startup.sh startup.sh
+RUN chmod +x ./startup.sh
+COPY ngrok-wait.sh wait.sh
+RUN chmod +x ./wait.sh
+
+USER $user
 
 COPY ./requirements*.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt -r requirements.dev.txt
@@ -13,5 +20,4 @@ ADD ./setup.py ./setup.py
 
 RUN pip3 install --no-cache-dir -e .[indy]
 
-COPY medici-startup.sh startup.sh
-ENTRYPOINT ["/bin/bash", "startup.sh"]
+CMD ./wait.sh ./startup.sh
