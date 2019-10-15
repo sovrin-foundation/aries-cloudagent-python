@@ -1,11 +1,7 @@
-version: '3'
+version: "3"
 services:
   ngrok:
-    container_name: ngrok
     image: wernight/ngrok
-    command: ngrok http agent:3000
-
+    command: ngrok http agent:3000 --log stdout
   agent:
     build: .
-    depends_on:
-      - ngrok 
