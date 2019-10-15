@@ -122,8 +122,10 @@ class SendCredProposalHandler(BaseHandler):
         )
 
         await responder.send(
-            CredentialProposal.deserialize(
-                context.message.credential_proposal
+            CredentialProposal(
+                comment=context.message.comment,
+                credential_proposal=context.message.credential_proposal,
+                cred_def_id=context.message.credential_definition_id
             ),
             connection_id=connection_id
         )
