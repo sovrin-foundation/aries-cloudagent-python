@@ -178,7 +178,13 @@ class SendCredDefHandler(BaseHandler):
         try:
             async with ledger:
                 credential_definition_id = await shield(
-                    ledger.send_credential_definition(context.message.schema_id)
+                    ledger.send_credential_definition(
+                        context.message.schema_id,
+                        tag='{}_{}'.format(
+                            schema_record.schema_name,
+                            schema_record.schema_version
+                        )
+                    )
                 )
         except Exception as err:
             report = ProblemReport(
