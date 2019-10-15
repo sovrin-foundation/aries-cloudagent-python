@@ -5,7 +5,7 @@ aca-py start \
     -ot http \
     -e $ENDPOINT \
     --auto-accept-requests --auto-ping-connection \
-    --auto-respond-credential-proposal --auto-respond-credential-request \
+    --auto-respond-credential-proposal --auto-respond-credential-offer --auto-respond-credential-request \
     --auto-respond-presentation-proposal --auto-respond-presentation-request --auto-verify-presentation \
     --invite --invite-role admin --invite-label MediciTrainingDockerAgent \
     --admin 0.0.0.0 3001 --admin-insecure-mode \
