@@ -148,12 +148,12 @@ class IndyProofReqPredSpecSchema(Schema):
         example="index",
         description="Attribute name",
         required=True)
-    p_type: fields.String(
+    p_type = fields.String(
         description="Predicate type (indy currently supports only '>=')",
         required=True,
         **INDY_PREDICATE
     )
-    p_value: fields.Integer(
+    p_value = fields.Integer(
         description="Threshold value",
         required=True,
     )

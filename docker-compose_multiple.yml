@@ -7,6 +7,8 @@ services:
     build: .
     environment:
       NGROK_NAME: ngrok-1
+      AGENT_NAME: Issuer
+
   ngrok-2:
     image: wernight/ngrok
     command: ngrok http agent-2:3000 --log stdout
@@ -14,3 +16,4 @@ services:
     build: .
     environment:
       NGROK_NAME: ngrok-2
+      AGENT_NAME: Holder
