@@ -25,6 +25,8 @@ CONNECTION_GET_LIST = '{}/connection-get-list'.format(PROTOCOL)
 CONNECTION_LIST = '{}/connection-list'.format(PROTOCOL)
 CONNECTION_GET = '{}/connection-get'.format(PROTOCOL)
 CONNECTION = '{}/connection'.format(PROTOCOL)
+INVITATION_GET_LIST = '{}/invitation-get-list'.format(PROTOCOL)
+INVITATION_LIST = '{}/invitation-list'.format(PROTOCOL)
 CREATE_INVITATION = '{}/create-invitation'.format(PROTOCOL)
 INVITATION = '{}/invitation'.format(PROTOCOL)
 RECEIVE_INVITATION = '{}/receive-invitation'.format(PROTOCOL)
@@ -52,6 +54,9 @@ MESSAGE_TYPES = {
     CREATE_INVITATION:
         'aries_cloudagent.messaging.admin.connections'
         '.CreateInvitation',
+    INVITATION_GET_LIST:
+        'aries_cloudagent.messaging.admin.connections'
+        '.InvitationGetList',
     INVITATION:
         'aries_cloudagent.messaging.admin.connections'
         '.Invitation',
@@ -137,6 +142,22 @@ Connection, ConnectionSchema = generate_model_schema(
     }
 )
 
+InvitationGetList, InvitationGetListSchema = generate_model_schema(
+    name='InvitationGetList',
+    handler='aries_cloudagent.messaging.admin.connections.InvitationGetListHandler',
+    msg_type=INVITATION_GET_LIST,
+    schema={
+        'initiator': fields.Str(
+            validate=validate.OneOf(['self', 'external']),
+            required=False,
+        ),
+        'invitation_key': fields.Str(required=False),
+        'my_did': fields.Str(required=False),
+        'their_did': fields.Str(required=False),
+        'their_role': fields.Str(required=False)
+    }
+)
+
 CreateInvitation, CreateInvitationSchema = generate_model_schema(
     name='CreateInvitation',
     handler='aries_cloudagent.messaging.admin.connections.CreateInvitationHandler',
@@ -164,6 +185,17 @@ Invitation, InvitationSchema = generate_model_schema(
     }
 )
 
+InvitationList, InvitationListSchema = generate_model_schema(
+    name='InvitationList',
+    handler='aries_cloudagent.messaging.admin.PassHandler',
+    msg_type=INVITATION_LIST,
+    schema={
+        'results': fields.List(fields.Dict(
+            connection=fields.Nested(ConnectionSchema),
+            invitation=fields.Nested(InvitationSchema)
+        ))
+    }
+)
 
 class CreateInvitationHandler(BaseHandler):
     """Handler for create invitation request."""
@@ -379,3 +411,40 @@ class ConnectionGetListHandler(BaseHandler):
         connection_list = ConnectionList(results=results)
         connection_list.assign_thread_from(context.message)
         await responder.send_reply(connection_list)
+
+
+class InvitationGetListHandler(BaseHandler):
+    """Handler for get invitation list request."""
+
+    @admin_only
+    async def handle(self, context: RequestContext, responder: BaseResponder):
+        """Handle get invitation list request."""
+
+        tag_filter = dict(
+            filter(lambda item: item[1] is not None, {
+                'initiator': context.message.initiator,
+                'invitation_key': context.message.invitation_key,
+                'my_did': context.message.my_did,
+                'state': 'invitation',
+                'their_did': context.message.their_did,
+                'their_role': context.message.their_role
+            }.items())
+        )
+        records = await ConnectionRecord.query(context, tag_filter)
+        results = []
+        for connection in records:
+            invitation = await connection.retrieve_invitation(context)
+
+            row = {
+                'connection': connection.serialize(),
+                'invitation': {
+                    'connection_id': connection and connection.connection_id,
+                    'invitation': invitation.serialize(),
+                    'invitation_url': invitation.to_url(),
+                }
+            }
+            results.append(row)
+
+        invitation_list = InvitationList(results=results)
+        invitation_list.assign_thread_from(context.message)
+        await responder.send_reply(invitation_list)
