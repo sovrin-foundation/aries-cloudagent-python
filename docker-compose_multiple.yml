@@ -7,7 +7,7 @@ services:
     build: .
     environment:
       NGROK_NAME: ngrok-1
-      AGENT_NAME: Issuer
+      AGENT_NAME: Company
 
   ngrok-2:
     image: wernight/ngrok
