@@ -97,7 +97,7 @@ async def indy_proof_request2indy_requested_creds(
                     {}
                 )
             )
-            if len(credentials) != 1:
+            if not credentials: # TODO better credential selection
                 raise ValueError(
                     f"Could not automatically construct presentation for "
                     + f"presentation request {indy_proof_request['name']}"
