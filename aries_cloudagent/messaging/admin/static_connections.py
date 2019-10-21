@@ -89,7 +89,8 @@ class CreateStaticConnectionHandler(BaseHandler):
             their_did=context.message.static_did,
             their_label=context.message.label,
             their_role=context.message.role if context.message.role else None,
-            state=ConnectionRecord.STATE_STATIC,
+            state=ConnectionRecord.STATE_ACTIVE,
+            invitation_mode=ConnectionRecord.INVITATION_MODE_STATIC
         )
 
         # Construct their did doc from the basic components in message
@@ -185,7 +186,7 @@ class StaticConnectionGetListHandler(BaseHandler):
                     'initiator': context.message.initiator,
                     'invitation_key': context.message.invitation_key,
                     'my_did': context.message.my_did,
-                    'state': ConnectionRecord.STATE_STATIC,
+                    'invitation_mode': ConnectionRecord.INVITATION_MODE_STATIC,
                     'their_did': context.message.their_did,
                     'their_role': context.message.their_role
                 }.items())
