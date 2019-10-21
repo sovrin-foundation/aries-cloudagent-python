@@ -35,6 +35,14 @@ def load_resource(path: str, encoding: str = None) -> TextIO:
         pass
 
 
+def not_a_validator_filter(record):
+    """Filter out 'not a Validator' errors."""
+    if record.name == 'indy.libindy.native.indy.services.pool.pool':
+        if len(record.args) > 1 and record.args[2].find('Node is not a Validator'):
+            return 0
+    return 1
+
+
 class LoggingConfigurator:
     """Utility class used to configure logging and print an informative start banner."""
 
@@ -74,6 +82,10 @@ class LoggingConfigurator:
         if log_level:
             log_level = log_level.upper()
             logging.root.setLevel(log_level)
+
+        if logging.root.hasHandlers():
+            handler = logging.root.handlers[0]
+            handler.addFilter(not_a_validator_filter)
 
     @classmethod
     def print_banner(
