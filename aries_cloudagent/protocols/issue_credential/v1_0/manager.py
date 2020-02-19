@@ -570,7 +570,8 @@ class CredentialManager:
         )
 
         # Delete the exchange record since we're done with it
-        await credential_exchange_record.delete_record(self.context)
+        # TODO acapy-plugin-toolbox decouple from exchange record usage
+        # await credential_exchange_record.delete_record(self.context)
         return (credential_exchange_record, credential_ack_message)
 
     async def receive_credential_ack(self) -> V10CredentialExchange:
@@ -594,6 +595,7 @@ class CredentialManager:
         await credential_exchange_record.save(self.context, reason="credential acked")
 
         # We're done with the exchange so delete
-        await credential_exchange_record.delete_record(self.context)
+        # TODO acapy-plugin-toolbox decouple from exchange record usage
+        # await credential_exchange_record.delete_record(self.context)
 
         return credential_exchange_record
