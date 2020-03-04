@@ -209,6 +209,8 @@ class Conductor:
                 invite_url = invitation.to_url(base_url)
                 print("Invitation URL:")
                 print(invite_url, flush=True)
+                print("The above invitation may be copied and given to another agent"
+                      "to establish a connection with this agent.", flush=True)
             except Exception:
                 LOGGER.exception("Error creating invitation")
 
